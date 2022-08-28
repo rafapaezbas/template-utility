@@ -27,12 +27,11 @@ replace_tag template content tag = unpack $ replace (pack tag) (pack content) (p
 replace_tags :: String -> [String] -> String -> IO(String)
 replace_tags _ [] template = return template
 replace_tags path (x:xs) template = do
-  isDir <- (check_folder $ (joinPath [(takeDirectory path), x]))
-  case isDir of
-    Right _ -> do
-      replace_tags path xs template
+  is_dir <- (check_folder $ (joinPath [(takeDirectory path), x]))
+  case is_dir of
+    Right _ -> replace_tags path xs template
     Left _ -> do
-      content <- readFile (joinPath[(takeDirectory path), x])
+      content <- (readFile (joinPath[(takeDirectory path), x]))
       replace_tags path xs $ replace_tag template content (['{'] ++ x ++ ['}'])
 
 main :: IO ()
