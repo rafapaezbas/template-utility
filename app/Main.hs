@@ -1,27 +1,34 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 import Control.Exception
 import System.Directory
 import Data.Text
 import System.FilePath
+import Options.Applicative
+
+data Opts = Opts { opt_path :: !String }
+
+optsParser :: ParserInfo Opts
+optsParser = info (helper <*> version <*> opts) (fullDesc <> progDesc "Generic text file generator from tags." <> header "Template-generator")
+version :: Parser (a -> a)
+version = infoOption "0.1" (long "version" <> help "Show version")
+opts :: Parser Opts
+opts = Opts <$> strOption (long "file-path" <> help "Template path.")
 
 done_message :: String
 done_message = "Done!"
 
-path :: String
-path = "/home/rpaezbas/Desktop/file.txt"
+checkFile :: String -> IO (Either SomeException String)
+checkFile path = (try $ readFile path) :: IO (Either SomeException String)
 
-cat :: String -> IO (Either SomeException String)
-cat path' = (try $ readFile path') :: IO (Either SomeException String)
+checkFolder :: String -> IO (Either SomeException [String])
+checkFolder path = try $ getDirectoryContents (takeDirectory path)
 
-replace_tags :: [String] -> String -> IO()
-replace_tags [] template = do
-  writeFile (path ++ "_") template
+replace_tags :: String -> [String] -> String -> IO()
+replace_tags path (x:xs) template = do
+  content <- readFile (joinPath[(takeDirectory path), x])
+  replace_tags path xs $ replace_tag template content (['{'] ++ x ++ ['}'])
+replace_tags path [] template = do
   putStrLn done_message
-replace_tags (x:xs) template = do
-  content <- readFile ((takeDirectory path) ++ "/" ++ x)
-  replace_tags xs $ replace_tag template content (['{'] ++ x ++ ['}'])
-
+  writeFile (path ++ "_") template
 
 replace_tag :: String -> String -> String -> String
 replace_tag "" _ _ = ""
@@ -30,9 +37,10 @@ replace_tag template content tag = unpack $ replace (pack tag) (pack content) (p
 
 main :: IO ()
 main = do
-  content <- cat path
-  files <- try $ getDirectoryContents (takeDirectory path) :: IO (Either SomeException [FilePath])
+  options <- execParser optsParser
+  content <- checkFile $ opt_path options
+  files <- checkFolder $ (takeDirectory $ opt_path options)
   case (content, files) of
     ( Left _ , _ ) -> putStrLn "File not found"
     ( _ , Left _ ) -> putStrLn "Folder not found"
-    (Right a, Right b) -> replace_tags ["file2.txt", "file3.txt"]  a
+    (Right a, Right b) -> replace_tags (opt_path options) ["file2.txt", "file3.txt"]  a
