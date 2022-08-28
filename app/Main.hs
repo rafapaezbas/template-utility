@@ -6,22 +6,28 @@ import Options.Applicative
 
 data Opts = Opts { opt_path :: !String }
 
-optsParser :: ParserInfo Opts
-optsParser = info (helper <*> version <*> opts) (fullDesc <> progDesc "Generic text file generator from tags." <> header "Template-generator")
+opts_parser :: ParserInfo Opts
+opts_parser = info (helper <*> version <*> opts) (fullDesc <> progDesc "Generic text file generator from tags." <> header "Template-generator")
 version :: Parser (a -> a)
 version = infoOption "0.1" (long "version" <> help "Show version")
 opts :: Parser Opts
 opts = Opts <$> strOption (long "file-path" <> help "Template path.")
 
-checkFile :: String -> IO (Either SomeException String)
-checkFile path = (try $ readFile path) :: IO (Either SomeException String)
+check_file :: String -> IO (Either SomeException String)
+check_file path = try $ readFile path
 
-checkFolder :: String -> IO (Either SomeException [String])
-checkFolder path = try $ getDirectoryContents path
+check_folder :: String -> IO (Either SomeException [String])
+check_folder path = try $ getDirectoryContents path
+
+replace_tag :: String -> String -> String -> String
+replace_tag "" _ _ = ""
+replace_tag template "" _ = template
+replace_tag template content tag = unpack $ replace (pack tag) (pack content) (pack template)
 
 replace_tags :: String -> [String] -> String -> IO(String)
+replace_tags _ [] template = return template
 replace_tags path (x:xs) template = do
-  isDir <- (checkFolder $ (joinPath [(takeDirectory path), x]))
+  isDir <- (check_folder $ (joinPath [(takeDirectory path), x]))
   case isDir of
     Right _ -> do
       replace_tags path xs template
@@ -29,18 +35,11 @@ replace_tags path (x:xs) template = do
       content <- readFile (joinPath[(takeDirectory path), x])
       replace_tags path xs $ replace_tag template content (['{'] ++ x ++ ['}'])
 
-replace_tags _ [] template = return template
-
-replace_tag :: String -> String -> String -> String
-replace_tag "" _ _ = ""
-replace_tag template "" _ = template
-replace_tag template content tag = unpack $ replace (pack tag) (pack content) (pack template)
-
 main :: IO ()
 main = do
-  options <- execParser optsParser
-  content <- checkFile $ opt_path options
-  files <- checkFolder $ takeDirectory $ opt_path options
+  options <- execParser opts_parser
+  content <- check_file $ opt_path options
+  files <- check_folder $ takeDirectory $ opt_path options
   case (content, files) of
     ( Left _ , _ ) -> putStrLn "File not found"
     ( _ , Left _ ) -> putStrLn "Folder not found"
