@@ -31,6 +31,7 @@ replace_tags path (x:xs) template = do
   case is_dir of
     Right _ -> replace_tags path xs template
     Left _ -> do
+      putStrLn $ "Checking " ++ x
       content <- (readFile (joinPath[(takeDirectory path), x]))
       replace_tags path xs $ replace_tag template content (['{'] ++ x ++ ['}'])
 
