@@ -31,6 +31,8 @@ executable templates
                       text,
                       directory,
                       filepath,
-		      optparse-applicative
+		      optparse-applicative,
+		      system-fileio,
+		      system-filepath
     hs-source-dirs:   app
     default-language: Haskell2010
