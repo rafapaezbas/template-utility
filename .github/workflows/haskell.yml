@@ -10,8 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        cabal: ["3.4"]
-        ghc: ["8.8.4", "8.10.5", "9.0.1"]
+        cabal: ["3.6.2.0"]
+        ghc: ["8.10.7"]
     env:
       CONFIG: "--enable-tests --enable-benchmarks"
     steps:
@@ -22,6 +22,4 @@ jobs:
           cabal-version: ${{ matrix.cabal }}
       - run: cabal v2-update $CONFIG
       - run: cabal v2-build $CONFIG
-      - run: cabal v2-test $CONFIG
-      - run: cabal v2-haddock $CONFIG
       - run: cabal v2-sdist
