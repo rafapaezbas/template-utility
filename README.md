@@ -31,3 +31,4 @@ This is file 1. It includes tags that will be replaced with content.
 
 This is the content of file 2.
 ```
+
